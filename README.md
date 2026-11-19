@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/35095135/README.md)
 # R_ord(K_3, P_9^alt) = 20: re-run material
 
 The claim: every red/blue colouring of the edges of the complete graph on vertices 1 < 2 < ... < 20 has a red
