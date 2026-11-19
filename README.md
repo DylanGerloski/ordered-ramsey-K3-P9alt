@@ -9,6 +9,33 @@ The lower bound is one explicit colouring. The upper bound is a SAT computation:
 unsatisfiable by a SAT solver and each proof checked by drat-trim. Nothing here is formally verified in a proof
 assistant, and the result has not been confirmed independently.
 
+## Check the colourings in a browser
+
+https://dylangerloski.github.io/ordered-ramsey-K3-P9alt/
+
+That page checks two colourings on the visitor's own machine, set by set, and loads nothing from anywhere else:
+
+- the colouring of K_19 below, the lower half of R_ord(K_3, P_9^alt) = 20;
+- a colouring of K_22 with no K_4 in one colour and no ordered P_7^alt in the other, `k4_p7_n22.g6`, which gives
+  R_ord(K_4, P_7^alt) >= 23. Table 15 of arXiv 2604.16188 prints this cell as at least 22. This is a lower bound
+  only; the upper bound is not shown here.
+
+Clicking a square of the matrix flips that edge, and the check then reports the clique or path that appears. A
+browser cannot re-run the upper half of the value 20; the rest of this file is how to do that.
+
+The page's checker is JavaScript. Its tests compare it with the two Python checkers here, `k3palt.py` and
+`kapalt_check.py`, on 1,070 colourings that hold both answers (Python 3.9 or later and Node 18 or later):
+
+```
+python -I tests/gen_cases.py cases.json
+node tests/test_core.mjs cases.json
+python -I kapalt_check.py check 4 7 k4_p7_n22.g6
+```
+
+The loose files in this repository are the same bytes as the members of `R_ord_K3_P9alt_20.zip`, except this
+README, which adds this section. `kapalt_check.py`, `k4_p7_n22.g6`, `ordered-ramsey-check.html`, `index.html` and
+`tests/` are not in the zip.
+
 ## Files
 
 | File | What it is |
