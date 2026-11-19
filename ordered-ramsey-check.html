@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ordered Ramsey Check</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one reading column; the colouring's matrix sits beside a running tally, and stacks under it on a phone. */
+:root {
+  --bg: #f4f6fa; --surface: #ffffff; --ink: #15203a; --muted: #5a6680; --rule: #d3dae6;
+  --c1: #2c5cc5; --c2: #e39a2d; --ok: #1c8556; --bad: #c5303d; --diag: #e7ebf2;
+  --text: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --data: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131f; --surface: #161d2d; --ink: #e5eaf4; --muted: #95a1ba; --rule: #2a3449;
+    --c1: #7aa2ff; --c2: #f0ac52; --ok: #4fc68d; --bad: #ff6f7b; --diag: #1d2537; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131f; --surface: #161d2d; --ink: #e5eaf4; --muted: #95a1ba; --rule: #2a3449;
+  --c1: #7aa2ff; --c2: #f0ac52; --ok: #4fc68d; --bad: #ff6f7b; --diag: #1d2537; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--text); font-size: 16px; line-height: 1.55; }
+.page { max-width: 960px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 28px; }
+h1 { font-size: clamp(1.5rem, 4vw, 2.1rem); line-height: 1.15; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font-size: 1.15rem; margin: 0 0 8px; text-wrap: balance; }
+p { margin: 0 0 10px; max-width: 68ch; }
+.lede { color: var(--muted); max-width: 64ch; margin-top: 10px; }
+.eyebrow { font-family: var(--data); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+code, .mono { font-family: var(--data); font-size: 0.92em; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab { font: inherit; font-family: var(--data); font-size: 0.9rem; padding: 8px 12px; border: 1px solid var(--rule); background: var(--surface);
+  color: var(--ink); border-radius: 6px; cursor: pointer; }
+.tab[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 -3px 0 var(--ink); }
+button:focus-visible, .tab:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible, canvas:focus-visible { outline: 2px solid var(--c1); outline-offset: 2px; }
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 720px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; min-width: 0; }
+.matrixwrap { width: 100%; aspect-ratio: 1; max-width: 100%; }
+canvas { width: 100%; height: 100%; display: block; cursor: crosshair; border-radius: 4px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; font-size: 0.88rem; color: var(--muted); }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 6px; }
+.claim { font-family: var(--data); font-size: 1.05rem; margin: 0 0 4px; overflow-wrap: anywhere; }
+.tally { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; margin: 14px 0; font-size: 0.95rem; }
+.tally dt { color: var(--muted); margin: 0; }
+.tally dd { margin: 0; font-family: var(--data); font-variant-numeric: tabular-nums; text-align: right; }
+.bar { height: 6px; background: var(--diag); border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--ink); }
+.verdict { margin-top: 14px; padding: 12px 14px; border-radius: 6px; border: 1px solid var(--rule); font-size: 0.98rem; }
+.verdict strong { display: block; font-size: 1.05rem; margin-bottom: 2px; }
+.verdict.ok { border-color: var(--ok); } .verdict.ok strong { color: var(--ok); }
+.verdict.bad { border-color: var(--bad); } .verdict.bad strong { color: var(--bad); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+.btn { font: inherit; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); cursor: pointer; }
+.btn.quiet { background: transparent; color: var(--ink); border-color: var(--rule); }
+.btn[disabled] { opacity: 0.5; cursor: default; }
+.note { font-size: 0.88rem; color: var(--muted); margin: 10px 0 0; }
+.flag { font-family: var(--data); font-size: 0.8rem; color: var(--bad); }
+.custom { display: grid; gap: 10px; margin-top: 4px; }
+.custom label { font-size: 0.88rem; color: var(--muted); display: grid; gap: 4px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+textarea, input, select { font-family: var(--data); font-size: 0.9rem; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; padding: 8px; width: 100%; min-width: 0; }
+textarea { min-height: 96px; resize: vertical; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
+@media (max-width: 720px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.fig { overflow-x: auto; }
+svg text { font-family: var(--data); font-size: 11px; fill: var(--muted); }
+pre { margin: 0; padding: 14px; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; overflow-x: auto; font-family: var(--data); font-size: 0.8rem; line-height: 1.5; }
+ul { margin: 0; padding-left: 20px; max-width: 68ch; } li { margin-bottom: 6px; }
+a { color: var(--c1); }
+footer { color: var(--muted); font-size: 0.88rem; border-top: 1px solid var(--rule); padding-top: 16px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header>
+    <div class="eyebrow">Ordered Ramsey numbers · arXiv 2604.16188</div>
+    <h1>Check these colourings in your own browser</h1>
+    <p class="lede">A lower bound for a Ramsey number is a single colouring. Anyone can check one by looking at every small set of vertices. This page does exactly that, here, on your machine, and loads nothing from anywhere while it works.</p>
+  </header>
+
+  <div class="tabs" role="group" aria-label="Which colouring to check">
+    <button class="tab" id="tab-k4p7" aria-pressed="true">K_4 vs P_7^alt on 22 vertices</button>
+    <button class="tab" id="tab-k3p9" aria-pressed="false">K_3 vs P_9^alt on 19 vertices</button>
+    <button class="tab" id="tab-custom" aria-pressed="false">Your own colouring</button>
+  </div>
+
+  <div class="bench">
+    <div class="panel">
+      <div class="matrixwrap"><canvas id="matrix" tabindex="0" aria-label="The colouring as a matrix. Row and column are the two ends of an edge."></canvas></div>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--c1)"></span>first colour, must hold no <span id="lg-a" class="mono">K_4</span></span>
+        <span><span class="sw" style="background:var(--c2)"></span>second colour, must hold no ordered <span id="lg-b" class="mono">P_7^alt</span></span>
+      </div>
+      <p class="note">Click any square to flip that edge to the other colour and watch the check fail. <span id="modflag" class="flag" hidden>Edited: this is no longer the published colouring.</span></p>
+    </div>
+
+    <div class="panel">
+      <p class="claim" id="claim">R_ord(K_4, P_7^alt) ≥ 23</p>
+      <p class="note" id="context" style="margin-top:0"></p>
+
+      <div class="custom" id="custombox" hidden>
+        <label for="cin">graph6 string, or one edge per line as two vertex numbers
+          <textarea id="cin" spellcheck="false">Unv~{UHaX@CMGIGIpMakGGIo@SqkGh?UW@Sv?Avw</textarea>
+        </label>
+        <div class="fields">
+          <label for="cside">The listed edges are the
+            <select id="cside"><option value="second">second colour</option><option value="first">first colour</option></select>
+          </label>
+          <label for="cn">Vertices, for an edge list
+            <input id="cn" type="number" min="2" max="40" value="22">
+          </label>
+          <label for="ca">Clique size a
+            <input id="ca" type="number" min="3" max="7" value="4">
+          </label>
+          <label for="cb">Path length b
+            <input id="cb" type="number" min="3" max="12" value="7">
+          </label>
+        </div>
+        <p class="note" id="cerr" style="color:var(--bad)" hidden></p>
+      </div>
+
+      <dl class="tally">
+        <dt id="t-a-label">4-vertex sets checked for a first-colour K_4</dt><dd id="t-a">0</dd>
+        <dt id="t-b-label">7-vertex sets checked for a second-colour P_7^alt</dt><dd id="t-b">0</dd>
+        <dt>Time</dt><dd id="t-ms">0 ms</dd>
+      </dl>
+      <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+      <div class="verdict" id="verdict" role="status"><strong>Checking…</strong><span></span></div>
+      <div class="row">
+        <button class="btn" id="run">Run the check again</button>
+        <button class="btn quiet" id="reset">Restore the published colouring</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="two">
+    <section>
+      <h2>What is being checked</h2>
+      <p>Take the complete graph on vertices <span class="mono">0, 1, …, n−1</span>, kept in that order, and give every edge one of two colours. The ordered Ramsey number <span class="mono">R_ord(K_a, P_b^alt)</span> is the smallest <span class="mono">n</span> at which every such colouring must contain a clique <span class="mono">K_a</span> in the first colour or an ordered copy of the alternating path <span class="mono">P_b^alt</span> in the second.</p>
+      <p>So a colouring of <span class="mono">K_n</span> with neither one proves <span class="mono">R_ord &gt; n</span>. The check is finite: every set of <span class="mono">a</span> vertices for the clique, and every set of <span class="mono">b</span> vertices for the path.</p>
+    </section>
+    <section>
+      <h2>The alternating path <span class="mono" id="fig-name">P_7^alt</span></h2>
+      <div class="fig" id="fig"></div>
+      <p class="note">On <span class="mono">b</span> ordered vertices the path runs first, last, second, second to last, and so on inward. An ordered copy keeps the left-to-right order of the vertices it lands on.</p>
+    </section>
+  </div>
+
+  <section>
+    <h2>What this does and does not show</h2>
+    <ul>
+      <li><strong>K_4 vs P_7^alt.</strong> Table 15 of the paper prints this cell as at least 22, and its Conjecture 4.22 gives 23. The colouring of K_22 here shows at least 23. It is a lower bound only. I have not shown the upper bound.</li>
+      <li><strong>K_3 vs P_9^alt.</strong> The colouring of K_19 here is the lower half of the value 20, the cell Table 9 leaves as at least 20. The upper half is a proof that no colouring of K_20 exists, split into 256 cases, each with a machine-checked proof. A browser cannot re-run that part. The material to re-run it is in the <a href="https://github.com/DylanGerloski/ordered-ramsey-K3-P9alt">public repository</a>, about 6 core-hours in all.</li>
+      <li><strong>Limits.</strong> Every one of those 256 proofs rests on the same build of one proof checker, and nobody outside my own lab has re-run them yet. This page checks the colourings and nothing more.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>The whole checker</h2>
+    <p>This is the code that ran above, shown from this page's own source. Before this page went up it was run against a separately written Python checker on 800 colourings, 152 valid and 648 not, and gave the same answer on every one.</p>
+    <pre id="src"></pre>
+  </section>
+
+  <footer>I did this with Kiln, my own system of AI agents built on Claude. The paper is arXiv 2604.16188. Corrections are welcome.</footer>
+</div>
+
+<script id="core">/*CORE-START*/
+// The order in which P_b^alt visits its b ordered vertices: 0, b-1, 1, b-2, ...
+function altOrder(b) {
+  const out = []; let lo = 0, hi = b - 1;
+  while (lo <= hi) { out.push(lo); if (hi !== lo) out.push(hi); lo++; hi--; }
+  return out;
+}
+// Every k-element subset of 0..n-1, in increasing order, one at a time.
+function* subsets(n, k) {
+  if (k > n) return;
+  const idx = Array.from({ length: k }, (_, i) => i);
+  while (true) {
+    yield idx;
+    let i = k - 1;
+    while (i >= 0 && idx[i] === n - k + i) i--;
+    if (i < 0) return;
+    idx[i]++;
+    for (let j = i + 1; j < k; j++) idx[j] = idx[j - 1] + 1;
+  }
+}
+// first[i][j] is true when edge ij has the first colour. Every other edge has the second.
+function isFirstClique(first, vs) {
+  for (let x = 0; x < vs.length; x++)
+    for (let y = x + 1; y < vs.length; y++)
+      if (!first[vs[x]][vs[y]]) return false;
+  return true;
+}
+function isSecondAltPath(first, vs, order) {
+  for (let t = 0; t + 1 < order.length; t++)
+    if (first[vs[order[t]]][vs[order[t + 1]]]) return false;
+  return true;
+}
+// Look at every a-set, then every b-set. Stops at the first clique or path it finds.
+function createCheck(first, a, b) {
+  const n = first.length, order = altOrder(b);
+  const cliques = subsets(n, a), paths = subsets(n, b);
+  const st = { cliqueSets: 0, pathSets: 0, hit: null, done: false };
+  let phase = 0;
+  st.step = function (budget) {
+    while (budget-- > 0 && !st.done) {
+      if (phase === 0) {
+        const r = cliques.next();
+        if (r.done) { phase = 1; continue; }
+        st.cliqueSets++;
+        if (isFirstClique(first, r.value)) { st.hit = { kind: "clique", vertices: r.value.slice() }; st.done = true; }
+      } else {
+        const r = paths.next();
+        if (r.done) { st.done = true; break; }
+        st.pathSets++;
+        if (isSecondAltPath(first, r.value, order)) {
+          st.hit = { kind: "path", vertices: r.value.slice(), walk: order.map(i => r.value[i]) }; st.done = true;
+        }
+      }
+    }
+    return st;
+  };
+  return st;
+}
+// graph6: one character for n, then the upper triangle column by column, six bits a character.
+function decodeGraph6(text) {
+  const c = Array.from(text.trim(), ch => ch.charCodeAt(0) - 63);
+  if (!c.length || c.some(v => v < 0 || v > 63)) throw new Error("That is not a graph6 string.");
+  const n = c[0];
+  if (n > 62) throw new Error("Only graphs of at most 62 vertices are read here.");
+  if ((c.length - 1) * 6 < n * (n - 1) / 2) throw new Error("The graph6 string is too short for " + n + " vertices.");
+  const adj = Array.from({ length: n }, () => new Array(n).fill(false));
+  let k = 0;
+  for (let j = 1; j < n; j++)
+    for (let i = 0; i < j; i++, k++)
+      if ((c[1 + Math.floor(k / 6)] >> (5 - (k % 6))) & 1) adj[i][j] = adj[j][i] = true;
+  return adj;
+}
+function binom(n, k) {
+  if (k < 0 || k > n) return 0;
+  let r = 1;
+  for (let i = 1; i <= k; i++) r = r * (n - k + i) / i;
+  return Math.round(r);
+}
+/*CORE-END*/</script>
+
+<script>
+(function () {
+  const G6_K22 = "Unv~{UHaX@CMGIGIpMakGGIo@SqkGh?UW@Sv?Avw";
+  const K19_FIRST = "0:14 15 16 17 18;1:7 8 9 10 12 13 14 17;2:10 12 13 14 16 17;3:7 8 9 10 12 13 14 17;4:11 15 16 17 18;5:7 8 9 10 12 13 14 17;6:8 9 10 12 13 14 17;7:11 15 16 18;8:11 15 16 18;9:11 15 16 18;10:11 15 18;11:12 13 14;12:15;13:15";
+
+  function blank(n) { return Array.from({ length: n }, () => new Array(n).fill(false)); }
+  function fromAdjacency(adj, listedAreFirst) {
+    const n = adj.length, f = blank(n);
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (i !== j) f[i][j] = listedAreFirst ? adj[i][j] : !adj[i][j];
+    return f;
+  }
+  function k19() {
+    const adj = blank(19);
+    K19_FIRST.split(";").forEach(function (part) {
+      const bits = part.split(":"), i = +bits[0];
+      bits[1].split(" ").forEach(function (t) { adj[i][+t] = adj[+t][i] = true; });
+    });
+    return fromAdjacency(adj, true);
+  }
+  const presets = {
+    k4p7: { a: 4, b: 7, make: function () { return fromAdjacency(decodeGraph6(G6_K22), false); },
+      context: "The paper prints this cell as at least 22. Here the edges of the graph6 string are the second colour and the non-edges the first." },
+    k3p9: { a: 3, b: 9, make: k19,
+      context: "The lower half of R_ord(K_3, P_9^alt) = 20. The 67 listed edges are the first colour." }
+  };
+
+  const $ = function (id) { return document.getElementById(id); };
+  const canvas = $("matrix"), ctx = canvas.getContext("2d");
+  const fmt = function (x) { return x.toLocaleString("en-GB"); };
+  let mode = "k4p7", first = null, a = 4, b = 7, edited = false, job = null, hit = null, raf = 0;
+
+  function token(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  function draw() {
+    const n = first.length, box = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    const size = Math.max(120, Math.round(box.width));
+    canvas.width = size * dpr; canvas.height = size * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const pad = n <= 30 ? 16 : 0, cell = (size - pad) / n;
+    ctx.fillStyle = token("--surface"); ctx.fillRect(0, 0, size, size);
+    const c1 = token("--c1"), c2 = token("--c2"), diag = token("--diag");
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      ctx.fillStyle = i === j ? diag : (first[i][j] ? c1 : c2);
+      ctx.fillRect(pad + j * cell + 0.5, pad + i * cell + 0.5, cell - 1, cell - 1);
+    }
+    if (pad) {
+      ctx.fillStyle = token("--muted"); ctx.font = "9px " + token("--data"); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const every = cell < 14 ? 2 : 1;
+      for (let i = 0; i < n; i += every) { ctx.fillText(String(i), pad + i * cell + cell / 2, pad / 2); ctx.fillText(String(i), pad / 2, pad + i * cell + cell / 2); }
+    }
+    if (hit) {
+      ctx.strokeStyle = token("--bad"); ctx.lineWidth = Math.max(2, cell * 0.16);
+      hitEdges(hit).forEach(function (e) {
+        [[e[0], e[1]], [e[1], e[0]]].forEach(function (p) { ctx.strokeRect(pad + p[1] * cell + 1.5, pad + p[0] * cell + 1.5, cell - 3, cell - 3); });
+      });
+    }
+  }
+  function hitEdges(h) {
+    const out = [];
+    if (h.kind === "clique") { for (let x = 0; x < h.vertices.length; x++) for (let y = x + 1; y < h.vertices.length; y++) out.push([h.vertices[x], h.vertices[y]]); }
+    else for (let t = 0; t + 1 < h.walk.length; t++) out.push([h.walk[t], h.walk[t + 1]]);
+    return out;
+  }
+
+  function figure() {
+    const order = altOrder(b), step = 44, w = (b - 1) * step + 40, base = 12 + (b - 1) * step / 2;
+    let s = '<svg viewBox="0 0 ' + w + " " + (base + 26) + '" width="' + w + '" role="img" aria-label="The alternating path on ' + b + ' ordered vertices">';
+    for (let t = 0; t + 1 < order.length; t++) {
+      const x1 = 20 + Math.min(order[t], order[t + 1]) * step, x2 = 20 + Math.max(order[t], order[t + 1]) * step, r = (x2 - x1) / 2;
+      s += '<path d="M ' + x1 + " " + base + " A " + r + " " + r + " 0 0 1 " + x2 + " " + base + '" fill="none" stroke="var(--c2)" stroke-width="2.5"/>';
+    }
+    for (let i = 0; i < b; i++) s += '<circle cx="' + (20 + i * step) + '" cy="' + base + '" r="4.5" fill="var(--ink)"/><text x="' + (20 + i * step) + '" y="' + (base + 20) + '" text-anchor="middle">' + i + "</text>";
+    $("fig").innerHTML = s + "</svg>";
+    $("fig-name").textContent = "P_" + b + "^alt";
+  }
+
+  function labels() {
+    const n = first.length;
+    $("lg-a").textContent = "K_" + a; $("lg-b").textContent = "P_" + b + "^alt";
+    $("t-a-label").textContent = a + "-vertex sets checked for a first-colour K_" + a;
+    $("t-b-label").textContent = b + "-vertex sets checked for a second-colour P_" + b + "^alt";
+    $("claim").textContent = "R_ord(K_" + a + ", P_" + b + "^alt) ≥ " + (n + 1) + (mode === "custom" || edited ? " ?" : "");
+    $("context").textContent = mode === "custom" ? "Your colouring of K_" + n + "." : presets[mode].context;
+    $("modflag").hidden = !edited;
+    $("reset").hidden = mode === "custom" || !edited;
+    figure();
+  }
+
+  function setVerdict(kind, head, body) {
+    const v = $("verdict"); v.className = "verdict" + (kind ? " " + kind : "");
+    v.firstElementChild.textContent = head; v.lastElementChild.textContent = body;
+  }
+
+  function run() {
+    cancelAnimationFrame(raf); hit = null;
+    const n = first.length, totalA = binom(n, a), totalB = binom(n, b), t0 = performance.now();
+    job = createCheck(first, a, b);
+    setVerdict("", "Checking…", "");
+    draw();
+    (function tick() {
+      job.step(6000);
+      $("t-a").textContent = fmt(job.cliqueSets) + " of " + fmt(totalA);
+      $("t-b").textContent = fmt(job.pathSets) + " of " + fmt(totalB);
+      $("t-ms").textContent = fmt(Math.round(performance.now() - t0)) + " ms";
+      $("bar").style.width = (100 * (job.cliqueSets + job.pathSets) / (totalA + totalB)).toFixed(1) + "%";
+      if (!job.done) { raf = requestAnimationFrame(tick); return; }
+      hit = job.hit;
+      if (!hit) {
+        $("bar").style.width = "100%";
+        setVerdict("ok", "Valid.", "No K_" + a + " in the first colour among " + fmt(totalA) + " sets of " + a + " vertices, and no ordered P_" + b + "^alt in the second among " + fmt(totalB) + " sets of " + b + ". So K_" + n + " has a colouring with neither, and R_ord(K_" + a + ", P_" + b + "^alt) is at least " + (n + 1) + ".");
+      } else if (hit.kind === "clique") {
+        setVerdict("bad", "Not valid.", "Vertices " + hit.vertices.join(", ") + " form a K_" + a + " in the first colour. It is outlined in the matrix.");
+      } else {
+        setVerdict("bad", "Not valid.", "Vertices " + hit.vertices.join(" < ") + " carry an ordered P_" + b + "^alt in the second colour, visited as " + hit.walk.join(" → ") + ". It is outlined in the matrix.");
+      }
+      draw();
+    })();
+  }
+
+  function load(which) {
+    mode = which; edited = false; $("cerr").hidden = true;
+    ["k4p7", "k3p9", "custom"].forEach(function (k) { $("tab-" + k).setAttribute("aria-pressed", String(k === which)); });
+    $("custombox").hidden = which !== "custom";
+    if (which === "custom") { if (!readCustom()) return; }
+    else { const p = presets[which]; a = p.a; b = p.b; first = p.make(); }
+    labels(); run();
+  }
+
+  function readCustom() {
+    const err = function (m) { $("cerr").textContent = m; $("cerr").hidden = false; return false; };
+    try {
+      const text = $("cin").value.trim(), listedFirst = $("cside").value === "first";
+      const na = +$("ca").value, nb = +$("cb").value;
+      if (!(na >= 3 && na <= 7) || !(nb >= 3 && nb <= 12)) return err("Clique size must be 3 to 7 and path length 3 to 12.");
+      let adj;
+      if (/^\s*\d+\s+\d+/.test(text)) {
+        const n = +$("cn").value;
+        if (!(n >= 2 && n <= 40)) return err("Give the number of vertices, 2 to 40.");
+        adj = blank(n);
+        const lines = text.split(/\n+/);
+        for (let q = 0; q < lines.length; q++) {
+          const m = lines[q].trim().split(/[\s,]+/).map(Number);
+          if (m.length !== 2 || !(m[0] >= 0 && m[1] >= 0 && m[0] < n && m[1] < n) || m[0] === m[1] || m[0] % 1 || m[1] % 1) return err("Line " + (q + 1) + " is not an edge between two different vertices in 0 to " + (n - 1) + ".");
+          adj[m[0]][m[1]] = adj[m[1]][m[0]] = true;
+        }
+      } else adj = decodeGraph6(text);
+      const n = adj.length;
+      if (binom(n, nb) + binom(n, na) > 60000000) return err("That is " + fmt(binom(n, nb)) + " sets of " + nb + " vertices, too many to check in a browser tab.");
+      a = na; b = nb; first = fromAdjacency(adj, listedFirst); $("cerr").hidden = true;
+      return true;
+    } catch (e) { return err(e.message); }
+  }
+
+  canvas.addEventListener("click", function (ev) {
+    const n = first.length, box = canvas.getBoundingClientRect(), pad = n <= 30 ? 16 : 0, cell = (box.width - pad) / n;
+    const j = Math.floor((ev.clientX - box.left - pad) / cell), i = Math.floor((ev.clientY - box.top - pad) / cell);
+    if (i < 0 || j < 0 || i >= n || j >= n || i === j) return;
+    first[i][j] = first[j][i] = !first[i][j];
+    edited = true; labels(); run();
+  });
+  $("tab-k4p7").addEventListener("click", function () { load("k4p7"); });
+  $("tab-k3p9").addEventListener("click", function () { load("k3p9"); });
+  $("tab-custom").addEventListener("click", function () { load("custom"); });
+  $("run").addEventListener("click", function () { if (mode === "custom") { if (!readCustom()) return; edited = false; labels(); } run(); });
+  $("reset").addEventListener("click", function () { load(mode); });
+  window.addEventListener("resize", draw);
+  if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  $("src").textContent = $("core").textContent.replace("/*CORE-START*/\n", "").replace("/*CORE-END*/", "").trim();
+  load("k4p7");
+})();
+</script>
+</body>
+</html>
