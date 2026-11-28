@@ -1,0 +1,676 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage[margin=1in]{geometry}
+
+\newcommand{\Rord}{R_{\mathrm{ord}}}
+\newcommand{\Cmon}[1]{C_{#1}^{\mathrm{mon}}}
+\newcommand{\Palt}[1]{P_{#1}^{\mathrm{alt}}}
+\newcommand{\Bfirst}{\mathcal{B}_0}
+\newcommand{\Blast}{\mathcal{B}_{\mathrm{last}}}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\newtheorem*{conjecture}{Conjecture 4.13}
+\newtheorem*{fact0}{Fact 0}
+\newtheorem*{lemmaD}{Lemma D}
+\newtheorem*{lemmaP}{Lemma P}
+\newtheorem*{corP}{Corollary P}
+\newtheorem*{lemmaN}{Lemma N}
+\newtheorem*{lemmaS}{Lemma S}
+\newtheorem*{lemmaH}{Lemma H}
+\newtheorem*{lemmaQ}{Lemma Q}
+\newtheorem*{lemmaC}{Lemma C}
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+
+\title{A note on Conjecture 4.13 of arXiv 2604.16188}
+\author{Dylan}
+\date{}
+
+\begin{document}
+\maketitle
+
+This note sets out the results on Conjecture 4.13 of arXiv 2604.16188 that I have sent by mail, with the hand
+proofs written in full. I worked on this with Kiln, my own system of AI agents built on Claude; the proofs below
+were found by that system. The proof of the lower bound, Theorem~\ref{thm:lower}, has been checked by two
+independent reviews in that system; the other hand proofs were reviewed inside my own lab only. Nothing here has
+been confirmed outside it. The computations can be re-run from
+the bundle I sent with the first mail.
+
+\begin{conjecture}
+For $a \geq 3$ and $b \geq 2$,
+\[
+  \Rord(\Cmon{a}, \Palt{b}) = N(a,b) := (a-1)(b-1) + \lfloor b/2 \rfloor .
+\]
+\end{conjecture}
+
+What this note proves: the lower bound $\Rord(\Cmon{a}, \Palt{b}) \geq N(a,b)$ for all $a \geq 3$, $b \geq 2$
+(Theorem~\ref{thm:lower}); the conjecture for $b = 2$ and $b = 3$ (Theorem~\ref{thm:b23}) and for $b = 4$
+(Theorem~\ref{thm:b4}), for every $a$; and a general upper bound $(b-1)(a + \sqrt{a-2})$ (Corollary~\ref{cor:gen}),
+which gives the leading term only. The upper bound for $b \geq 5$ is not proved here. Section~\ref{sec:values}
+lists exact values found by computer, each with its own status.
+
+\section{Definitions and one reformulation}
+
+Vertices are $0, \dots, n-1$. I call the colour in which $\Palt{b}$ is forbidden \emph{blue} (the path colour) and
+the colour in which $\Cmon{a}$ is forbidden \emph{red} (the cycle colour).
+
+\begin{itemize}
+  \item $\Cmon{a}$: vertices $v_0 < \dots < v_{a-1}$, with red pairs $v_t v_{t+1}$ for all $t$ and $v_0 v_{a-1}$.
+  \item $\Palt{b}$: the path visiting the ranks $0, b-1, 1, b-2, 2, \dots$ of $v_0 < \dots < v_{b-1}$, all of its
+  $b-1$ pairs blue.
+\end{itemize}
+
+\begin{fact0}[chain form of $\Palt{b}$]
+Call a sequence of pairs $e_1, \dots, e_k$, each $e_t = (l_t, r_t)$ with $l_t < r_t$, an \emph{L-chain} if for
+every $t < k$: for $t$ odd, $r_{t+1} = r_t$ and $l_t < l_{t+1} < r_t$ (a \emph{left move}); for $t$ even,
+$l_{t+1} = l_t$ and $l_t < r_{t+1} < r_t$ (a \emph{right move}). An \emph{R-chain} is the same with the roles of
+odd and even swapped (the first move is a right move). Then the blue copies of $\Palt{b}$ correspond exactly to
+the L-chains of $b-1$ blue pairs.
+\end{fact0}
+
+\begin{proof}
+Write the path as $w_0 = v_0$, $w_1 = v_{b-1}$, $w_2 = v_1$, $w_3 = v_{b-2}$, \dots. Its $t$-th edge is
+$\{w_{t-1}, w_t\}$. As pairs: $e_1 = (v_0, v_{b-1})$, $e_2 = (v_1, v_{b-1})$, $e_3 = (v_1, v_{b-2})$, \dots: each
+step keeps one endpoint and moves the other strictly inward, left endpoint first, then alternating. Conversely
+an L-chain of $b-1$ pairs has exactly $b$ distinct vertices (each move introduces one new vertex strictly inside
+the previous pair), and listing them in increasing order gives $v_0 < \dots < v_{b-1}$ with exactly the pairs of
+$\Palt{b}$.
+\end{proof}
+
+A chain of $k$ pairs has $k+1$ vertices, and all its vertices lie in the closed interval $[l_1, r_1]$. The mirror
+image of $\Palt{k}$ (the path $k-1, 0, k-2, 1, \dots$) corresponds in the same way to R-chains of $k-1$ pairs.
+I write $A_k$ for $\Palt{k}$ and $B_k$ for its mirror image.
+
+\section{The lower bound for all $a$ and $b$}
+
+\subsection{The colouring}
+
+Let $a \geq 3$, $b \geq 2$, $m = 2a-1$, $h = \lfloor b/2 \rfloor$, $s = \lfloor (b-1)/2 \rfloor$. Note
+$h + s = b-1$ and $s \in \{h-1, h\}$. Take classes $Z_0, \dots, Z_{m-1}$, indexed by $\mathbb{Z}_m$ (the integers
+mod $m$), of sizes
+\[
+  |Z_k| = h \text{ for even } k \leq m-3, \qquad |Z_k| = s \text{ for odd } k \leq m-2, \qquad |Z_{m-1}| = h-1 .
+\]
+In total $(a-1)h + (a-1)s + (h-1) = (a-1)(b-1) + \lfloor b/2 \rfloor - 1 = N(a,b) - 1$.
+
+The order on the line has three kinds of blocks, from left to right:
+\begin{itemize}
+  \item $\Bfirst = Z_0 \cup Z_1$, interleaved: $Z_0 = \{p_1 < \dots < p_h\}$, $Z_1 = \{q_1 < \dots < q_s\}$, with
+  $p_1 < q_1 < p_2 < q_2 < \dots$ ($q_i$ sits immediately after $p_i$);
+  \item then $Z_2, Z_3, \dots, Z_{m-3}$, each a block of consecutive vertices, in this order;
+  \item $\Blast = Z_{m-2} \cup Z_{m-1}$, interleaved: $X := Z_{m-2} = \{x_1 < \dots < x_s\}$,
+  $Y := Z_{m-1} = \{y_1 < \dots < y_{h-1}\}$, with $x_1 < y_1 < x_2 < y_2 < \dots$ ($y_j$ sits immediately after
+  $x_j$).
+\end{itemize}
+
+A pair is blue if its two classes are equal or cyclically adjacent in $\mathbb{Z}_m$ (circular distance at most
+$1$), and red if the circular distance is at least $2$. Since $m \geq 5$, for example $Z_0$--$Z_2$, $Z_0$--$Z_{m-2}$
+and $Z_1$--$Z_{m-1}$ are red. So the colouring is a blow-up of the odd cycle $C_{2a-1}$, and the only subtlety is
+the interleaving of the two end blocks.
+
+Example, $a = 3$, $b = 6$ (the classes of the 12 vertices): \texttt{0 1 0 1 0 | 2 2 2 | 3 4 3 4}. For $b = 3$
+this is the blue path $0$--$1$--$\cdots$--$(2a-3)$; for $b = 2$ it is $a-1$ vertices, all pairs red.
+
+\begin{remark}
+The interleaving turns out to be necessary in the cells I searched: at $(3,6)$ and $(3,7)$ no blow-up with every
+class an interval works.
+\end{remark}
+
+\begin{theorem}\label{thm:lower}
+This colouring of the ordered $K_{N(a,b)-1}$ has no red $\Cmon{a}$ and no blue $\Palt{b}$. Hence
+\[
+  \Rord(\Cmon{a}, \Palt{b}) \geq (a-1)(b-1) + \lfloor b/2 \rfloor = \lceil (a - 1/2)(b-1) \rceil
+\]
+for all $a \geq 3$, $b \geq 2$.
+\end{theorem}
+
+\subsection{Proof: no red $\Cmon{a}$}
+
+Let $v_0 < \dots < v_{a-1}$ be a red monotone cycle and $c_t$ the class index (as an integer in
+$0, \dots, m-1$) of $v_t$. All pairs inside $\Bfirst$ are blue (classes $0$ and $1$), and $\Bfirst$ precedes
+every other vertex; if two cycle vertices were in $\Bfirst$ they would be $v_0, v_1$, a blue consecutive pair. So
+at most $v_0$ is in $\Bfirst$. Likewise at most $v_{a-1}$ is in $\Blast$. Outside $\Bfirst$ and $\Blast$ the
+class index is non-decreasing along the line, $\Bfirst$ holds the classes $\{0, 1\}$ and $\Blast$ the classes
+$\{m-2, m-1\}$; hence $c_0 \leq c_1 \leq \dots \leq c_{a-1}$ as integers. A red consecutive pair has circular
+distance at least $2$, in particular $|c_{t+1} - c_t| \geq 2$, so $c_{t+1} \geq c_t + 2$. Summing,
+$c_{a-1} \geq c_0 + 2(a-1) = c_0 + m - 1$, which forces $c_0 = 0$ and $c_{a-1} = m-1$. But the classes $0$ and
+$m-1$ are cyclically adjacent, so the closing pair $v_0 v_{a-1}$ is blue. Contradiction. \qed
+
+This part uses neither the sizes nor the interleaving.
+
+\subsection{Proof: no blue $\Palt{b}$}
+
+By Fact 0 it suffices to show that every L-chain of blue pairs has at most $b-1$ vertices. The blue neighbours of a
+vertex of $Z_k$ lie in $Z_{k-1} \cup Z_k \cup Z_{k+1}$ (indices mod $m$). Call a blue pair a \emph{wrap} pair if
+it joins $Z_0$ and $Z_{m-1}$ (so it is $(p_i, y_j)$), and \emph{local} otherwise (both classes in $\{k, k+1\}$ for
+some $0 \leq k \leq m-2$).
+
+Counting facts, immediate from the interleaving ($|Z_0| = h$, $|Z_1| = |X| = s$, $|Y| = h-1$):
+\begin{itemize}
+  \item[(P1)] the number of vertices of $\Blast$ smaller than $y_j$ is $2j-1$ ($x_1, \dots, x_j$,
+  $y_1, \dots, y_{j-1}$);
+  \item[(P2)] the number of vertices of $\Bfirst$ larger than $p_i$ is $(h-i) + (s-i+1) = h+s-2i+1$;
+  \item[(P3)] the number of vertices of $\Bfirst$ larger than $q_i$ is $(h-i) + (s-i) = h+s-2i$;
+  \item[(P4)] the number of vertices of $\Blast$ smaller than $x_j$ is $2(j-1)$.
+\end{itemize}
+
+Let $e_1, \dots, e_k$ be an L-chain of blue pairs, $e_1 = (u, v)$. Among the first $t-1$ moves,
+$\lceil (t-1)/2 \rceil$ are left moves and $\lfloor (t-1)/2 \rfloor$ are right moves.
+
+\textbf{Case W: $e_1$ is a wrap pair.} Let $e_1, \dots, e_r$ be the maximal initial run of wrap pairs,
+$e_t = (p_{i_t}, y_{j_t})$. Every left move inside the run raises the index $i$ by at least $1$ and every right
+move lowers $j$ by at least $1$.
+\begin{itemize}
+  \item[W0:] $r = k$. Then $1 + \lfloor (k-1)/2 \rfloor \leq |Y| = h-1$ distinct $y$'s are used, so
+  $k-1 \leq 2(h-2)+1$, and the number of vertices is $k+1 \leq 2h-1 \leq b-1$.
+  \item[W1:] $r < k$ and move $r$ is a left move ($r$ odd). Then $e_r = (p_i, y_j)$ with
+  $j \leq (h-1) - (r-1)/2$. The new left endpoint $w$ satisfies $p_i < w < y_j$ and is blue to $y_j$, so $w$ is in
+  $Z_{m-2} \cup Z_{m-1} \cup Z_0$; it is not in $Z_0$ (the run is maximal), so $w$ is in $\Blast$, $w < y_j$. All
+  later vertices of the chain lie in $[w, y_j)$, which is inside $\Blast$. By (P1) there are at most $2j-1$
+  vertices after the first $r+1$. In total at most $(r+1) + (2j-1) = r + 2j \leq r + 2(h-1) - (r-1) = 2h-1 \leq b-1$.
+  \item[W2:] $r < k$ and move $r$ is a right move ($r$ even, $r \geq 2$). Then $e_r = (p_i, y_j)$ with
+  $i \geq 1 + r/2$. The new right endpoint $w$ satisfies $p_i < w < y_j$ and is blue to $p_i$, so $w$ is in
+  $Z_{m-1} \cup Z_0 \cup Z_1$, not in $Z_{m-1}$ (maximal run), so $w$ is in $\Bfirst$, $w > p_i$. All later
+  vertices lie in $(p_i, w]$, inside $\Bfirst$. By (P2) there are at most $h+s-2i+1$ of them. In total at most
+  $(r+1) + (h+s-2i+1) \leq r + 2 + h + s - 2 - r = h + s = b-1$.
+\end{itemize}
+
+\textbf{Case L: $e_1 = (u, v)$ is local.} Then no later pair is a wrap pair: a wrap pair $(p, y)$ nested in
+$[u, v]$ would force $u$ in $\Bfirst$ ($u \leq p$, and everything left of a vertex of $\Bfirst$ is in $\Bfirst$)
+and $v$ in $\Blast$, that is, $\mathrm{class}(u) \leq 1$ and $\mathrm{class}(v) \geq m-2 \geq 3$, impossible for a
+local pair. So all pairs of the chain are local.
+\begin{itemize}
+  \item[L0:] $u$ and $v$ lie in a common set $I$ that is an interval of the line, where $I$ is one of: $\Bfirst$
+  (size $h+s = b-1$), $\Blast$ (size $s+h-1 = b-2$), $Z_k \cup Z_{k+1}$ with $2 \leq k \leq m-4$ (size
+  $h+s = b-1$), or a single class $Z_k$ with $2 \leq k \leq m-3$. All chain vertices lie in $[u, v]$, inside $I$,
+  so there are at most $b-1$ of them.
+\end{itemize}
+The local pairs not covered by L0 are exactly: $u$ in $Z_1$, $v$ in $Z_2$ (type T1), and $u$ in $Z_{m-3}$, $v$ in
+$X = Z_{m-2}$ (type T2). For $m = 5$ both types involve $Z_2 = Z_{m-3}$; they are still distinct types.
+\begin{itemize}
+  \item[L1:] $e_1$ is of type T1. Let $e_1, \dots, e_r$ be the maximal initial run of pairs of type T1,
+  $e_t = (q_{i_t}, z_t)$ with $z_t$ in $Z_2$.
+  \begin{itemize}
+    \item If $r = k$: all vertices are in $Z_1 \cup Z_2$, at most $s + h = b-1$.
+    \item If move $r$ is a left move: the new left endpoint $w$ has $q_i < w < z$ and is blue to $z$ in $Z_2$, so
+    it is in $Z_1 \cup Z_2 \cup Z_3$. $Z_3$ lies entirely to the right of $Z_2$ (also when $m = 5$, where
+    $Z_3 = X$ is in $\Blast$), and $w$ in $Z_1$ would continue the run; so $w$ is in $Z_2$, and all later vertices
+    lie in $[w, z)$, inside $Z_2$. All chain vertices are in $Z_1 \cup Z_2$: at most $b-1$.
+    \item If move $r$ is a right move ($r$ even): $e_r = (q_i, z)$ with $i \geq 1 + r/2$. The new right endpoint
+    $w$ has $q_i < w < z$ and is blue to $q_i$, so it is in $Z_0 \cup Z_1 \cup Z_2$, not in $Z_2$ (maximal run),
+    so $w$ is in $\Bfirst$, $w > q_i$. Later vertices lie in $(q_i, w]$, inside $\Bfirst$: by (P3) at most
+    $h+s-2i$. In total at most $(r+1) + h+s-2i \leq r+1+h+s-2-r = b-2$.
+  \end{itemize}
+  \item[L2:] $e_1$ is of type T2. Let $e_1, \dots, e_r$ be the maximal initial run of type T2,
+  $e_t = (w_t, x_{j_t})$ with $w_t$ in $W := Z_{m-3}$.
+  \begin{itemize}
+    \item If $r = k$: all vertices are in $W \cup X$, at most $h + s = b-1$.
+    \item If move $r$ is a right move: the new right endpoint $w'$ has $w_t < w' < x$ and is blue to $w_t$ in
+    $Z_{m-3}$, so it is in $Z_{m-4} \cup Z_{m-3} \cup Z_{m-2}$. $Z_{m-4}$ lies entirely to the left of $Z_{m-3}$
+    (for $m = 5$, $Z_1$ is in $\Bfirst$), and $w'$ in $X$ would continue the run; so $w'$ is in $W$ and all later
+    vertices lie in $(w_t, w']$, inside $W$. All chain vertices are in $W \cup X$: at most $b-1$.
+    \item If move $r$ is a left move ($r$ odd): $e_r = (w_t, x_j)$ with $j \leq s - (r-1)/2$. The new left
+    endpoint $u'$ has $w_t < u' < x_j$ and is blue to $x_j$, so it is in $Z_{m-3} \cup Z_{m-2} \cup Z_{m-1}$, not
+    in $W$ (maximal run), so $u'$ is in $\Blast$, $u' < x_j$. Later vertices lie in $[u', x_j)$, inside $\Blast$:
+    by (P4) at most $2(j-1)$. In total at most $(r+1) + 2j - 2 \leq r - 1 + 2s - (r-1) = 2s \leq b-1$.
+  \end{itemize}
+\end{itemize}
+
+Every L-chain of blue pairs has at most $b-1$ vertices, so there is no blue $\Palt{b}$. \qed
+
+\begin{remark}
+W2, L0 and (for odd $b$) L2 reach $b-1$: the colouring contains a blue $\Palt{b-1}$.
+\end{remark}
+
+\section{Upper bounds}
+
+\begin{lemmaD}[red degree]
+In a colouring with no red $\Cmon{a}$ ($a \geq 3$) and no blue $K_b$ (in particular, no blue $\Palt{b}$), every
+vertex $v$ has at most $(a-2)(b-1)$ red left-neighbours and at most $(a-2)(b-1)$ red right-neighbours.
+\end{lemmaD}
+
+\begin{proof}
+Let $R$ be the set of red left-neighbours of $v$. If $R$ contained a red monotone path $q_1 < \dots < q_{a-1}$,
+then $q_1, \dots, q_{a-1}, v$ would be a red $\Cmon{a}$ (pairs $q_t q_{t+1}$, $q_{a-1} v$, $q_1 v$). So $R$ has no
+red monotone path on $a-1$ vertices. Label each $u$ in $R$ by the number of vertices of a longest red monotone
+path inside $R$ ending at $u$: the labels are in $1, \dots, a-2$, and two vertices with the same label are joined
+by a blue pair, so each label class is a blue clique, of size at most $b-1$. Hence $|R| \leq (a-2)(b-1)$.
+Right-neighbours: the mirror image.
+\end{proof}
+
+\subsection{$b = 2$ and $b = 3$}
+
+\begin{theorem}\label{thm:b23}
+$\Rord(\Cmon{a}, \Palt{2}) = a$ and $\Rord(\Cmon{a}, \Palt{3}) = 2a-1$ for all $a \geq 3$.
+\end{theorem}
+
+\begin{proof}
+Lower bounds: Theorem~\ref{thm:lower} ($N(a,2) = a$, $N(a,3) = 2a-1$).
+
+$b = 2$: $\Palt{2}$ is a single pair, so no blue pair exists; on $a$ vertices everything is red and
+$0 < 1 < \dots < a-1$ is a red $\Cmon{a}$.
+
+$b = 3$: $\Palt{3}$ is $v_0 < v_1 < v_2$ with $(v_0, v_2)$ and $(v_1, v_2)$ blue, so ``no blue $\Palt{3}$'' means
+that every vertex has at most one blue left-neighbour. Then the blue graph is a forest (the largest vertex of a
+cycle would have two smaller neighbours), hence bipartite; on $2a-1$ vertices one side has at least $a$ vertices,
+pairwise red. Any $a$ pairwise red vertices, in increasing order, are a red $\Cmon{a}$.
+\end{proof}
+
+\subsection{A general bound from counting blue pairs}
+
+\begin{lemmaP}[peeling]
+Let $k \geq 3$ and let $G$ be an ordered graph with no $A_k$ ($= \Palt{k}$). Let $F$ be the set of edges
+$(\min N^-(v), v)$, one for every vertex $v$ with a left neighbour (its leftmost left-edge). Then $G - F$ has no
+$B_{k-1}$. Symmetrically, if $G$ has no $B_k$ and $F$ is the set of rightmost right-edges, then $G - F$ has no
+$A_{k-1}$.
+\end{lemmaP}
+
+\begin{proof}
+Suppose $G - F$ contains $B_{k-1}$, that is, an R-chain $e'_1, \dots, e'_{k-2}$ of edges of $G - F$, with
+$e'_1 = (x, w)$. Since $(x, w)$ is an edge of $G$ that is not in $F$, $x$ is not the leftmost neighbour of $w$:
+there is $y < x$ with $(y, w)$ an edge of $G$. Then $(y, w), e'_1, \dots, e'_{k-2}$ is a sequence of $k-1$ edges
+of $G$ whose first move is a left move ($y \to x$, with $y < x < w$) and whose remaining moves are those of the
+R-chain, that is, right, left, \dots; so it is an L-chain of $k-1$ pairs, an $A_k$ in $G$. Contradiction. The
+symmetric statement is the mirror image.
+\end{proof}
+
+\begin{corP}
+If $G$ (on $n$ vertices) has no $A_b$, $b \geq 3$, then $E(G) = F_1 \cup \dots \cup F_{b-2}$ (disjoint), where in
+$F_i$ with $i$ odd every vertex is the right endpoint of at most one edge, and in $F_i$ with $i$ even every vertex
+is the left endpoint of at most one edge. Each $F_i$ is a forest with at most $n-1$ edges. In particular
+$|E(G)| \leq (b-2)(n-1)$.
+\end{corP}
+
+\begin{proof}
+Apply Lemma P $b-2$ times, alternating sides: $G_0 = G$ has no $A_b$, $G_1 = G_0 - F_1$ has no $B_{b-1}$,
+$G_2 = G_1 - F_2$ has no $A_{b-2}$, \dots, and $G_{b-2}$ has no $A_2$ or no $B_2$, that is, no edge. $F_i$ ($i$
+odd) contains at most one edge from each vertex to a smaller vertex, so it has no cycle (the largest vertex of a
+cycle would have two smaller neighbours) and at most $n-1$ edges (vertex $0$ contributes none); the mirror holds
+for $i$ even.
+\end{proof}
+
+\begin{theorem}\label{thm:gen}
+Let $a \geq 3$, $b \geq 3$, $c = (a-2)(b-1)$, $o = \lceil (b-2)/2 \rceil$, $e = \lfloor (b-2)/2 \rfloor$. If a
+colouring of the ordered $K_n$ has no red $\Cmon{a}$ and no blue $\Palt{b}$, and $x := n - c \geq 1$, then
+\[
+  x(x-1)/2 \leq o(x-1) + e(n-1) = o(x-1) + e(c + x - 1). \qquad (*)
+\]
+Consequently $\Rord(\Cmon{a}, \Palt{b}) \leq c + x^* + 1$, where $x^*$ is the largest integer $x \geq 1$
+satisfying ($*$).
+\end{theorem}
+
+\begin{corollary}\label{cor:gen}
+$\Rord(\Cmon{a}, \Palt{b}) \leq (a-2)(b-1) + 2b - 2 + \sqrt{(b-2)(b-1)(a-2)} \leq (b-1)(a + \sqrt{a-2})$.
+\end{corollary}
+
+\begin{proof}[Proof of Theorem~\ref{thm:gen} and Corollary~\ref{cor:gen}]
+By Lemma D the vertex with index $v$ (it has exactly $v$ vertices to its left) has at least $v - c$ blue
+left-neighbours. Let $T = \{c+1, \dots, n-1\}$ ($x-1$ vertices). The number of blue pairs whose right endpoint is
+in $T$ is at least $\sum_{v=c+1}^{n-1} (v-c) = x(x-1)/2$. By Corollary P the blue pairs split into
+$F_1, \dots, F_{b-2}$. For odd $i$ (there are $o$ such $i$) each vertex is the right endpoint of at most one pair
+of $F_i$, so $F_i$ has at most $|T| = x-1$ pairs with right endpoint in $T$. For even $i$ (there are $e$ such $i$)
+$|F_i| \leq n-1$. This gives ($*$).
+
+($*$) fails for all large $x$ (the left side is quadratic, the right side linear), and if it holds for $x$ it
+holds for every smaller $x' \geq 1$ with $n' = c + x'$ (delete the last $x - x'$ vertices: the restricted
+colouring still avoids both patterns). So every avoiding colouring has $n \leq c + x^*$.
+
+For the corollary: ($*$) reads $x^2 - (2o+2e+1)x + 2o + 2e - 2ec \leq 0$; with $o + e = b-2$ this gives
+$x(x - (2b-3)) \leq 2ec - 2(b-2) < 2ec$, so $x \leq 2b-3 + \sqrt{2ec}$, and $2e \leq b-2$. Finally
+$\sqrt{(b-2)(b-1)(a-2)} \leq (b-1)\sqrt{a-2}$ and $(a-2)(b-1) + 2b - 2 = a(b-1)$.
+\end{proof}
+
+For $b = 3$: $o = 1$, $e = 0$, ($*$) is $x(x-1)/2 \leq x-1$, $x^* = 2$, and the bound is $2(a-2)+3 = 2a-1$, exact
+again. For $b = 4$: ($*$) is $(x-1)(x-4) \leq 6(a-2)$.
+
+So for every fixed $b$ (indeed uniformly in $b$), $\Rord(\Cmon{a}, \Palt{b}) = (a-1)(b-1)(1 + O(a^{-1/2}))$: the
+leading term of the conjecture is proved; the exact additive term $\lfloor b/2 \rfloor$ is not.
+
+\subsection{A recursion in $b$, and the cell $(3,4)$}
+
+\begin{lemmaN}
+In a colouring with no blue $\Palt{b}$ ($b \geq 4$), let $z$ be any vertex with blue left-neighbours
+$x_1 < x_2 < \dots < x_d$. Then the set $\{x_2, \dots, x_d\}$ carries no blue $\Palt{b-2}$.
+\end{lemmaN}
+
+\begin{proof}
+Suppose $u_1 < \dots < u_{b-2}$, all in $\{x_2, \dots, x_d\}$, carry a blue $\Palt{b-2}$, that is (Fact 0), an
+L-chain $e'_1 = (u_1, u_{b-2}), e'_2, \dots, e'_{b-3}$ of blue pairs. Then
+$(x_1, z), (u_1, z), e'_1, \dots, e'_{b-3}$ is a sequence of $b-1$ blue pairs: move $1$ is a left move
+($x_1 < u_1 < z$), move $2$ is a right move ($u_1 < u_{b-2} < z$), and the remaining moves are those of the
+L-chain shifted by two positions, so the parity pattern left, right, left, \dots\ is kept. This is an L-chain of
+$b-1$ blue pairs: a blue $\Palt{b}$. Contradiction.
+\end{proof}
+
+\begin{theorem}\label{thm:rec}
+Write $R(a,b) = \Rord(\Cmon{a}, \Palt{b})$. For $a \geq 3$, $b \geq 4$:
+$R(a,b) \leq (a-2)(b-1) + 2 + R(a,b-2)$.
+\end{theorem}
+
+\begin{proof}
+Take a colouring on $n$ vertices with no red $\Cmon{a}$ and no blue $\Palt{b}$, and let $z = n-1$. Its $n-1$ left
+vertices split into red left-neighbours, at most $(a-2)(b-1)$ by Lemma D, and blue left-neighbours
+$x_1 < \dots < x_d$. By Lemma N the set $\{x_2, \dots, x_d\}$ has no blue $\Palt{b-2}$, and it has no red
+$\Cmon{a}$, so $d - 1 \leq R(a,b-2) - 1$. Hence $n \leq 1 + (a-2)(b-1) + R(a,b-2)$, that is,
+$R(a,b) \leq (a-2)(b-1) + 2 + R(a,b-2)$.
+\end{proof}
+
+\begin{corollary}\label{cor:rec}
+Using Theorem~\ref{thm:b23} for the base, $R(a,4) \leq 3(a-2) + 2 + a = 4a-4$ and
+$R(a,5) \leq 4(a-2) + 2 + 2a-1 = 6a-7$. For $a = 3$: $R(3,4) \leq 8$, and Theorem~\ref{thm:lower} gives
+$R(3,4) \geq 8$. So
+\[
+  \Rord(K_3, \Palt{4}) = \Rord(\Cmon{3}, \Palt{4}) = 8 ,
+\]
+the conjectured value, proved by hand.
+\end{corollary}
+
+\section{$b = 4$, for every $a$}
+
+Table 9 of the paper already gives these values by computer, $3a-1$ for $b = 4$ and $a = 3, \dots, 8$. What I add
+is a proof for every $a$.
+
+Throughout this section: $b = 4$, $a \geq 4$ ($a = 3$ is Corollary~\ref{cor:rec}), and a colouring of the ordered
+$K_n$ with no red $\Cmon{a}$ and no blue $\Palt{4}$. ``Path'' means red monotone path; its length is its number of
+vertices.
+
+\subsection{Tight pairs}
+
+For a vertex $v$ with a blue left-neighbour let $p(v)$ be its leftmost blue left-neighbour. Call a blue pair
+$(x, v)$, $x < v$, \emph{tight} if $x \neq p(v)$.
+
+\begin{lemmaS}
+(a) If $(x, v)$ is tight then $x$ is red to every vertex strictly between $x$ and $v$.
+(b) Every vertex has at most one tight right partner.
+(c) The tight left partners of $v$ are pairwise red.
+(d) Every blue pair is either $(p(v), v)$ or tight. There is no blue $K_4$.
+\end{lemmaS}
+
+\begin{proof}
+(a) If $y$ in $(x, v)$ were blue to $x$, then $p(v) < x < y < v$ with $(p(v), v)$, $(x, v)$, $(x, y)$ blue is a
+blue $\Palt{4}$. (b) If $(x, v)$ and $(x, v')$ are tight with $v < v'$, then $v$ is a blue neighbour of $x$ inside
+$(x, v')$, against (a). (c) follows from (a). (d) is the definition; a blue $K_4$ contains $\Palt{4}$.
+\end{proof}
+
+\subsection{Notation at the last vertex, and two forbidden path types}
+
+Let $z = n-1$, $X = \{x_1 < \dots < x_j\}$ its blue left-neighbours (so $x_1 = p(z)$), $T = \{x_2, \dots, x_j\}$
+(the tight partners of $z$), $W = [0, z) \setminus X$ (the red left-neighbours of $z$), and $V' = W \cup T$.
+\begin{itemize}
+  \item $T$ is a red clique and every $x$ in $T$ is red to every vertex of $(x, z)$ (Lemma S). Hence
+  $|T| \leq a-1$.
+  \item[(G)] There is no path of length exactly $a-1$ inside $[0, z)$ that starts and ends in $W$ (append $z$: a
+  red $\Cmon{a}$).
+  \item[(B)] There is no path of length exactly $a$ that starts at a vertex $x$ of $T$ and lies in $[x, z)$ (its
+  last vertex is in $(x, z)$, hence red to $x$: a red $\Cmon{a}$).
+  \item Lemma D for $b = 4$: every vertex has at most $3(a-2)$ red left-neighbours, so the vertex with index $v$ has
+  at least $v - 3(a-2)$ blue left-neighbours. If $n = 3a-1$: $z$ has $j \geq 4$, $z-1$ has at least $3$ and $z-2$
+  has at least $2$ blue left-neighbours.
+\end{itemize}
+
+\subsection{The shape of a counterexample}
+
+Let $\ell^*(v)$ be the length of a longest path inside $V'$ ending at $v$. Its classes are blue cliques, of size at
+most $3$.
+
+\begin{lemmaH}[any $n$]
+Let $H = \{v \in V' : \ell^*(v) \geq a\}$. If $H$ is nonempty then there is $x_0$ in $T$ with $\ell^*(x_0) = a-1$
+and $H = (x_0, z)$ (all vertices strictly between $x_0$ and $z$). Every path of length $a-1$ inside $V'$ that ends
+at $x_0$ starts at a vertex $q$ of $W$, and each such $q$ is blue to every vertex of $H$.
+\end{lemmaH}
+
+\begin{proof}
+Let $v$ be in $H$ and $q_1 < \dots < q_a = v$ the last $a$ vertices of a longest path in $V'$ ending at $v$. By
+(B), $q_1$ is in $W$. By (G), $q_{a-1}$ is not in $W$, so it is in $T$, it has $\ell^* \geq a-1$, and $v$ lies in
+$(q_{a-1}, z)$. Conversely, if $x$ in $T$ has $\ell^*(x) \geq a-1$, every vertex of $(x, z)$ is in $V'$
+($x_1 < x_2 \leq x$), is red to $x$, and so has $\ell^* \geq a$. Let $x_0$ be the smallest $x$ in $T$ with
+$\ell^*(x) \geq a-1$ and $(x, z)$ nonempty: then $H = (x_0, z)$, and $\ell^*(x_0) \leq a-1$ since $x_0$ is not in
+$H$. A path of length $a-1$ in $V'$ ending at $x_0$, extended by any $h$ in $H$, is a path of length $a$; by (B)
+its start $q$ is in $W$, and $(q, h)$ must be blue (otherwise a red $\Cmon{a}$).
+\end{proof}
+
+\begin{theorem}\label{thm:shape}
+Suppose $n = 3a-1$ (a counterexample). Then, with $g = |H|$:
+\begin{enumerate}
+  \item $H$ is nonempty.
+  \item $g = 2$: $H = \{z-2, z-1\}$, and $x_0 = z-3$ is a tight partner of $z$ with $\ell^*(x_0) = a-1$.
+  \item $x_0$ is the only vertex of $V'$ in $[0, x_0]$ with $\ell^* = a-1$, and the $3a-6$ vertices of $V'$ in
+  $[0, x_0)$ are partitioned by $\ell^*$ into exactly $a-2$ blue triangles (labels $1, \dots, a-2$).
+  \item There is exactly one vertex $q_0$ that starts a path of length $a-1$ in $V'$ ending at $x_0$; $q_0$ is in
+  $W$, $\ell^*(q_0) = 1$, $q_0$ is blue to $z-2$ and $z-1$, and $q_0 = p(z-1)$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+$|V'| = n - 2 = 3(a-1)$, and $j \geq 4$.
+
+(1) Suppose all $\ell^* \leq a-1$. Then the $a-1$ classes are blue triangles. A vertex of $T$ has no blue neighbour
+in $(x, z)$, so it is the largest vertex of its triangle. Let $\{r < s < t\}$ be the class of label $a-1$; $r$ and
+$s$ are in $W$. A path of length $a-1$ in $V'$ ending at $r$ (or $s$) starts in $T$ by (G), at some $x^*$ in $T$;
+if $r$ were red to some $y$ in $V'$ with $y > r$, then $x^*, \dots, r, y$ would contradict (B). So $r$, and likewise
+$s$, is blue to every vertex of $V'$ to its right. If $V'$ had two vertices $y_1 < y_2$ to the right of $s$, then
+$(s, y_2)$ is not tight ($y_1$ is a blue neighbour of $s$ in between), so $s = p(y_2)$, but $r < s$ is blue to
+$y_2$. So $t$ is the only vertex of $V'$ right of $s$; as $x_1 < x_2 \leq x^* < r$, $s = z-2$ and $t = z-1$. Let
+$D = (r, s)$; all of $D$ is blue to $r$.
+
+$t = z-1$ has at least $3$ blue left-neighbours. None is left of $r$ (then $(r, t)$ would be tight although $s$ in
+$(r, t)$ is blue to $r$). So some $u$ in $D$ is blue to $t$, tight, hence red to $s$. $s = z-2$ has at least $2$
+blue left-neighbours; $D$ is nonempty, so $(r, s)$ is not tight, $r = p(s)$, and some $u'$ in $D$ is blue to $s$;
+$u' \neq u$. So $|D| \geq 2$.
+
+Let $x^* = q_1 < \dots < q_{a-2} < r$ be a path of length $a-1$ ending at $r$. Every $d$ in $D$ is red to $s$ or
+to $t$ (if blue to $t$ it is tight to $t$ and red to $s$). If $(q_{a-2}, d)$ were red, then
+$x^*, \dots, q_{a-2}, d$, ($s$ or $t$) would contradict (B). So $q_{a-2}$ is blue to every $d$ in $D$; then
+$r \neq p(d)$, $(r, d)$ is tight, $r$ has no blue neighbour in $(r, d)$, so $d = \min D$. Hence $|D| \leq 1$.
+Contradiction; (1) holds.
+
+By Lemma H: $x_0$ is in $T$, $\ell^*(x_0) = a-1$, $H = (x_0, z)$, $g \geq 1$; the set $S_0$ of starts of
+$(a-1)$-paths ending at $x_0$ is a nonempty subset of $W$, each $q$ in $S_0$ is blue to all of $H$, and
+$\ell^*(q) = 1$ for $q$ in $S_0$. $V'$ in $[0, x_0]$ has $3(a-1) - g$ vertices with labels at most $a-1$.
+
+$g = 1$ is impossible: then exactly one class among the labels $1, \dots, a-1$ has size $2$ and the others size
+$3$. Let $r \neq x_0$ have label $a-1$; $r$ is in $W$ ($T$ is a red clique) and $r < x_0$. As in (1), $r$ is blue
+to every vertex of $V'$ right of $r$, in particular to $x_0$ and to $z-1$; since $x_0$ lies in $(r, z-1)$,
+$(r, z-1)$ is not tight and $r = p(z-1)$. Take $q$ in $S_0$: $q$ is blue to $z-1$, so $q \geq r$, and $q \neq r$
+(labels $1$ and $a-1 \geq 3$), so $x^* < r < q$ where $x^*$ in $T$ starts an $(a-1)$-path ending at $r$; $x^*$ is
+red to $q$, so $\ell^*(q) \geq 2$. Contradiction. So the class of label $a-1$ is $\{x_0\}$: two vertices short, but
+only one is allowed. Hence $g \geq 2$.
+
+For $g \geq 2$: for $q$ in $S_0$ and $h$ in $H$ other than $\min H$, $(q, h)$ is not tight ($\min H$ is a blue
+neighbour of $q$ in between), so $q = p(h)$: $S_0 = \{q_0\}$ and $q_0 = p(z-1)$. If $r \neq x_0$ had label $a-1$,
+then as before $r$ is in $W$ and blue to all of $V'$ right of $r$, so $r \geq q_0 = p(z-1)$, $r \neq q_0$, hence
+$(r, z-1)$ is tight, but $x_0$ in $(r, z-1)$ is blue to $r$ (same class). So the class of label $a-1$ is
+$\{x_0\}$. This gives (4) and the first half of (3).
+
+$g \leq 2$: take the path $q_0 = q_1 < q_2 < \dots < q_{a-1} = x_0$ ($a \geq 4$, so $q_2 \neq x_0$). If $q_2$ is in
+$T$: a red pair $h < h'$ in $H$ would give the path $q_2, \dots, x_0, h, h'$ of length $a$ starting in $T$,
+against (B); so $H$ is a blue clique, and with $q_0$ (blue to all of $H$) $H \cup \{q_0\}$ is a blue clique:
+$g \leq 2$. If $q_2$ is in $W$: for $h$ in $H$ the path $q_2, \dots, x_0, h$ has length $a-1$ and starts in $W$, so
+by (G) $h$ is not in $W$: $H$ is a subset of $T$, a red clique. For every $h'$ in $H$ other than $\min H$ the path
+$q_2, \dots, x_0, \min H, h'$ has length $a$, so $(q_2, h')$ is blue, and it is tight because
+$p(h') = q_0 \neq q_2$. By Lemma S(b) there is at most one such $h'$: $g \leq 2$.
+
+So $g = 2$, $H = \{z-2, z-1\}$, $x_0 = z-3$, and $V'$ in $[0, x_0)$ has $3(a-1) - 2 - 1 = 3(a-2)$ vertices with
+labels at most $a-2$: $a-2$ blue triangles.
+\end{proof}
+
+\subsection{The closing step: the configuration of Theorem~\ref{thm:shape} is impossible}
+
+Setting (any $n$): an avoiding colouring ($b = 4$, $a \geq 4$), $z = n-1$, with $j \geq 2$, the notation above, and
+$|H| = 2$. By Lemma H and the $n$-independent parts of the proof of Theorem~\ref{thm:shape} (the paragraphs
+``For $g \geq 2$'' and ``$g \leq 2$''): $x_0 = z-3$ is in $T$, $\ell^*(x_0) = a-1$, $H = \{z-2, z-1\}$;
+$S_0 = \{q_0\}$; $q_0$ is in $W$, $\ell^*(q_0) = 1$, $q_0 = p(z-1)$; and $x_0$ is the only vertex of $V'$ in
+$[0, x_0]$ with $\ell^* = a-1$.
+
+Fix a path $q_0 = q_1 < q_2 < \dots < q_{a-1} = x_0$ inside $V'$. Then $\ell^*(q_i) = i$ for all $i$
+($\ell^*(q_i) \geq i$ along the path, and $\ell^*(q_i) + (a-1-i) \leq \ell^*(x_0) = a-1$). Since $a \geq 4$,
+$q_2 \neq x_0$.
+
+\begin{lemmaQ}
+(i) $q_2$ is red to every vertex strictly between $q_2$ and $z-1$.
+(ii) Every vertex of $V'$ that is smaller than $q_2$, other than $q_0$, is blue to $q_2$.
+(iii) At most $5$ vertices of $V'$ have $\ell^* \leq 2$.
+\end{lemmaQ}
+
+\begin{proof}
+(i) If $q_2$ is in $T$, it is red to every vertex of $(q_2, z)$ by Lemma S(a) (the tight pair $(q_2, z)$). If
+$q_2$ is in $W$: for $h$ in $H$ the path $q_2, \dots, q_{a-1} = x_0, h$ ($x_0$ in $T$ is red to $h$) has
+$(a-2) + 1 = a-1$ vertices, lies in $[0, z)$ and starts in $W$; by (G) $h$ is not in $W$, so $h$ is in $T$. Hence
+$z-2$ and $z-1$ are both in $T$ and $(z-2, z-1)$ is red ($T$ is a red clique). Then
+$q_2, \dots, x_0, z-2, z-1$ is a path on $(a-2) + 2 = a$ vertices, so $(q_2, z-1)$ is blue (otherwise a red
+$\Cmon{a}$). It is tight, because $p(z-1) = q_0 \neq q_2$. By Lemma S(a), $q_2$ is red to every vertex strictly
+between $q_2$ and $z-1$.
+
+(ii) Let $u$ be in $V'$, $u < q_2$, $u \neq q_0$, and suppose $(u, q_2)$ is red. Then
+$u, q_2, q_3, \dots, q_{a-1} = x_0$ is a path on $a-1$ vertices inside $V'$ ending at $x_0$, so $u$ is in
+$S_0 = \{q_0\}$. Contradiction.
+
+(iii) Let $v$ be in $V'$ with $\ell^*(v) \leq 2$. $v$ is not in $H$ and $v \neq x_0$ ($\ell^*(x_0) = a-1 \geq 3$),
+so $v < x_0$. If $v > q_2$ then $q_2 < v < x_0 < z-1$, so $(q_2, v)$ is red by (i) and
+$\ell^*(v) \geq \ell^*(q_2) + 1 = 3$. So $v \leq q_2$. Let $u_1 < u_2 < \dots < u_k$ be the vertices of $V'$
+smaller than $q_2$ other than $q_0$. By (ii) all are blue to $q_2$. For $i \geq 2$, $u_i \neq p(q_2)$ ($u_1$ is a
+blue left-neighbour of $q_2$ to its left), so $(u_i, q_2)$ is tight; by Lemma S(c), $u_2, \dots, u_k$ are pairwise
+red: a red clique inside $V'$, so $\ell^*(u_2) < \ell^*(u_3) < \dots < \ell^*(u_k)$, and at most two of
+$u_2, \dots, u_k$ have $\ell^* \leq 2$. Hence the vertices of $V'$ with $\ell^* \leq 2$ are among $q_0$, $q_2$,
+$u_1$, and at most two of $u_2, \dots, u_k$. That is at most $5$.
+\end{proof}
+
+\begin{theorem}[any $n$]\label{thm:close}
+An avoiding colouring ($b = 4$, $a \geq 4$) with $|H| = 2$ has $n \leq 3a-2$.
+\end{theorem}
+
+\begin{proof}
+$V'$ is the disjoint union of: the vertices with $\ell^* \leq 2$ (at most $5$, Lemma Q); the classes of labels
+$3, \dots, a-2$ ($a-4$ blue cliques, at most $3$ vertices each, by ``no blue $K_4$''); the vertices with
+$\ell^* = a-1$, of which only $x_0$ lies in $[0, x_0]$ and none lies in $(x_0, z) = H$; and $H$ ($2$ vertices). So
+$|V'| \leq 5 + 3(a-4) + 1 + 2 = 3a-4$, and $n = |V'| + 2 \leq 3a-2$.
+\end{proof}
+
+For $a = 4$ the labels $1, 2$ are all the labels below $a-1 = 3$, and the count reads $5 + 0 + 1 + 2 = 8 = 3a-4$.
+
+\begin{theorem}\label{thm:b4}
+$\Rord(\Cmon{a}, \Palt{4}) = 3a-1$ for every $a \geq 3$.
+\end{theorem}
+
+\begin{proof}
+Lower bound: Theorem~\ref{thm:lower} with $b = 4$ ($N(a,4) = 3(a-1) + 2 = 3a-1$). Upper bound for $a = 3$:
+Corollary~\ref{cor:rec}, not yet checked by a second reader. Upper bound for $a \geq 4$: suppose an avoiding
+colouring on $n = 3a-1$ vertices exists. By the last item of the notation above, $j \geq 4$. By
+Theorem~\ref{thm:shape} (1) and (2), $H = \{z-2, z-1\}$, so $|H| = 2$. By Theorem~\ref{thm:close}, $n \leq 3a-2$.
+Contradiction.
+\end{proof}
+
+What Theorem~\ref{thm:b4} depends on, in full: Lemma D; Lemma S; (G) and (B); Lemma H;
+Theorem~\ref{thm:shape} (1) and the paragraphs on $g = 1$, $g \geq 2$ and $g \leq 2$ of its proof; Lemma Q;
+Theorem~\ref{thm:close}; Theorem~\ref{thm:lower}; Corollary~\ref{cor:rec}. Fact 0 is not needed.
+
+\section{Exact values found by computer}\label{sec:values}
+
+A compact SAT encoding (Section~\ref{sec:comp}) makes the open cells of Table 9 much cheaper. With it I get, all
+equal to the conjecture:
+
+\begin{center}
+\begin{tabular}{lccccccccc}
+\toprule
+$(a,b)$ & $(9,4)$ & $(7,5)$ & $(4,7)$ & $(3,9)$ & $(10,4)$ & $(8,5)$ & $(9,5)$ & $(10,5)$ & $(6,6)$ \\
+\midrule
+$\Rord(\Cmon{a}, \Palt{b})$ & 26 & 26 & 21 & 20 & 29 & 30 & 34 & 38 & 28 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For each value I have a colouring on one vertex fewer, checked by a separate pattern search, and a DRUP proof of
+unsatisfiability checked by drat-trim. The upper halves of $(8,5) = 30$, $(10,5) = 38$ and $(6,6) = 28$ are solver
+results with the certificates from my own run, not yet re-checked by a second reader. Beyond the grid of Table 9 the
+same method gives $b = 5$ for $a = 11$ and $12$, $\Rord = 42$ and $46$, with the same two checks from my own run,
+likewise not yet re-checked, and $b = 5$ for $a = 13$ as a solver answer without a checked proof so far, all equal
+to the conjecture. For $b = 4$, every $a$ is covered by Theorem~\ref{thm:b4}.
+
+\subsection{The cell $(3,9) = 20$, checked by a second route}
+
+$\Cmon{3}$ is $K_3$, so this value is also $\Rord(K_3, \Palt{9})$; Table 9 leaves it as at least 20. I have checked
+its upper half again by a separate route, which does not use the compact encoding. It uses the direct one: a
+variable for each edge, a clause for each triangle, and a clause for each 9-vertex set, with no helper variables
+and no symmetry breaking. That is 190 variables and 169{,}100 clauses at $n = 20$. I split it on 8 edges into 256
+cubes that together cover every colouring. Each cube is unsatisfiable, with a DRAT proof checked by drat-trim. A
+second checker, written separately in my lab, has also checked seventeen of the proofs step by step, in the LRAT
+form drat-trim produces, against a formula rebuilt separately. The value agrees with Conjectures 4.13 and 4.22 at
+$b = 9$.
+
+The limits: every proof rests on the same drat-trim build, and nobody outside my own lab has re-run it.
+
+The lower half is a colouring of $K_{19}$ with no triangle in the first colour and no ordered $\Palt{9}$ in the
+second, accepted by two separately written checkers. Here it is as one graph6 line. The vertices are those of
+$K_{19}$ in their graph6 order; the edges are the pairs in the path colour, the colour with no $\Palt{9}$; the
+non-edges are the cycle colour, the colour with no $\Cmon{3}$:
+
+\begin{verbatim}
+    R~~~|apg\BwN_^_^_N~{?^_\]Fy[~w
+\end{verbatim}
+
+\subsection{A separate quantity: $\Rord(K_4, \Palt{7}) \geq 23$}
+
+This item is about a different Ramsey number from the cell $(4,7)$ of the table above. The table's
+$\Rord(\Cmon{4}, \Palt{7}) = 21$ forbids a monotone cycle $\Cmon{4}$ in the first colour; the number here,
+$\Rord(K_4, \Palt{7})$, forbids a $K_4$ in the first colour, and what I have for it is a lower bound only.
+
+Table 15 of the paper prints $\Rord(K_4, \Palt{7})$ as at least 22, and Conjecture 4.22 gives 23. I found a
+colouring of $K_{22}$ with no $K_4$ in the first colour and no ordered $\Palt{7}$ in the second, so
+$\Rord(K_4, \Palt{7}) \geq 23$. Here it is as one graph6 line. The vertices are 0 to 21 in their graph6 order; the
+edges are the second colour, the colour with no $\Palt{7}$; the non-edges are the first colour, the colour with no
+$K_4$:
+
+\begin{verbatim}
+    Unv~{UHaX@CMGIGIpMakGGIo@SqkGh?UW@Sv?Avw
+\end{verbatim}
+
+Two checkers that share no code with my encoding accept it by brute force over every 4-set and 7-set. This is a
+lower bound only. It matches Conjecture 4.22 at $(4,7)$, but I have not shown the upper bound.
+
+\section{Computations}\label{sec:comp}
+
+Both patterns are reachability statements: $\Palt{b}$ is a chain of nested pairs (Fact 0) and $\Cmon{a}$ is a
+monotone path closed by one edge, so ``no copy'' needs about $n^3$ short clauses with helper variables instead of
+one clause per copy. In the encoding, a variable $e(i,j)$, $i < j$, is true when the pair has the path colour.
+
+\begin{itemize}
+  \item No $\Palt{b}$ among the path-colour pairs: variables $D_k(i,j)$, $k = 2, \dots, b-2$, say that $(i,j)$ is
+  the innermost pair of a chain of $k$ path-colour pairs ($D_1$ is $e$ itself). For $k$ odd,
+  $D_k(i,j) \wedge e(i',j) \to D_{k+1}(i',j)$ for $i < i' < j$; for $k$ even,
+  $D_k(i,j) \wedge e(i,j') \to D_{k+1}(i,j')$ for $i < j' < j$. The step from $k = b-2$ to $b-1$ is forbidden:
+  $\neg D_{b-2}(i,j)$ or $\neg e$ of the next pair.
+  \item No $\Cmon{a}$ among the other pairs: variables $M_k(i,j)$, $k = 2, \dots, a-2$, say that there is a
+  monotone path of $k$ such pairs from $i$ to $j$ ($M_1$ is $\neg e$). Step:
+  $M_k(i,j) \wedge \neg e(j,l) \to M_{k+1}(i,l)$ for $l > j$. Last:
+  $\neg M_{a-2}(i,j) \vee e(j,l) \vee e(i,l)$ for $l > j$.
+\end{itemize}
+
+\begin{lemmaC}
+Only forward implications are written. That is sound and complete for satisfiability: a model of the plain CNF
+(one clause per copy) extends by setting $D$, $M$ to the true reachability, and a model of the chain CNF restricted
+to $e$ has neither pattern (induction).
+\end{lemmaC}
+
+This lemma is proved by hand only. It is tested by running the plain and the chain encoding on small cells, where
+they give the same verdict at every $n$; it is not machine-proved.
+
+For each exact value, the colouring on one vertex fewer is checked by a backtracking pattern search written from
+the definitions, which shares no code with the encoding, and the unsatisfiability at the value is a DRUP proof from
+CaDiCaL, checked by drat-trim. Small cases of each lemma in the hand proofs are tested by scripts; they do not prove
+them. The bundle I sent with the first mail holds the encoding, the checkers, the certificates and a README with
+the commands that re-run all of this; the bundle for the cell $(3,9)$ holds the encoder, the list of cubes, a
+sha256 for each cube's formula and proof, the colouring with a check script, and the command that re-runs it,
+about 6 core-hours in all. Its proofs come to 3.28 GB and are not attached.
+
+\section{What I do not have}
+
+The upper bound for $b \geq 5$. The general bound of Corollary~\ref{cor:gen}, $(b-1)(a + \sqrt{a-2})$, gives the
+leading term only. The hand proofs were read inside my own lab only, and the lemma behind the compact encoding is
+tested, not machine-proved.
+
+\end{document}

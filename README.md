@@ -33,8 +33,34 @@ python -I kapalt_check.py check 4 7 k4_p7_n22.g6
 ```
 
 The loose files in this repository are the same bytes as the members of `R_ord_K3_P9alt_20.zip`, except this
-README, which adds this section. `kapalt_check.py`, `k4_p7_n22.g6`, `ordered-ramsey-check.html`, `index.html` and
-`tests/` are not in the zip.
+README, which adds this section. `kapalt_check.py`, `k4_p7_n22.g6`, `ordered-ramsey-check.html`, `index.html`,
+`tests/` and `note/` are not in the zip.
+
+## A note on Conjecture 4.13, with hand proofs
+
+`note/ordered_ramsey_proofs.pdf`, with its LaTeX source `note/ordered_ramsey_proofs.tex`, is a note on
+Conjecture 4.13 of arXiv 2604.16188: for a >= 3 and b >= 2,
+R_ord(C_a^mon, P_b^alt) = N(a, b) := (a-1)(b-1) + floor(b/2).
+
+What the note proves by hand:
+
+- the lower bound R_ord(C_a^mon, P_b^alt) >= N(a, b) for all a >= 3 and b >= 2;
+- the conjecture for b = 2, 3 and 4, at every a;
+- a general upper bound (b-1)(a + sqrt(a-2)), which gives the leading term only.
+
+The upper bound for b >= 5 is not proved. The note also lists the exact values found by computer, each with its
+own status, a second route to (3, 9) = 20, and the lower bound R_ord(K_4, P_7^alt) >= 23.
+
+Status, stated plainly: I worked on this with Kiln, my own system of AI agents built on Claude, and the proofs
+were found by that system. The proof of the lower bound was checked by two independent reviews inside that
+system; the other hand proofs were reviewed inside my own lab only. Nothing in the note has been confirmed
+outside it. The note was sent to the first author of arXiv 2604.16188 on 25 November 2026; this repository holds
+the re-run material for (3, 9) = 20 and the K_22 colouring only. The files behind the note's other computed
+values, which it says were sent by mail, are not here; they can be provided on request. Corrections are welcome
+as issues.
+
+The PDF was compiled with XeTeX. sha256: PDF `00d3c6f36825eff95e92e08c260272fcfc77ca309b12b033addca2cf7eb9f19c`,
+source `55fd46342a59502affecbeedab88c27e7558cf91a823bf3b6acdeacf15b27bb4`.
 
 ## Files
 
